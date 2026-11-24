@@ -420,6 +420,8 @@ async function google(corpo, campos) {
     if (/referer|referrer/i.test(msg)) throw new Error("A chave não permite este endereço. Adicione o endereço do app nas restrições da chave (veja o guia).");
     if (/billing/i.test(msg)) throw new Error("O faturamento não está ativo no Google Cloud (veja o guia).");
     if (/not been used|disabled/i.test(msg)) throw new Error("Ative a “Places API (New)” no Google Cloud (veja o guia).");
+    if (/permission denied|PERMISSION_DENIED|are blocked|not authorized/i.test(msg) || r.status === 403)
+      throw new Error("O Google recusou a busca. Confira no Google Cloud: 1) Places API (New) ativada, 2) faturamento vinculado ao projeto, 3) a chave liberada para a Places API (New). Depois espere uns minutos.");
     throw new Error("Erro do Google: " + msg);
   }
   return d;
