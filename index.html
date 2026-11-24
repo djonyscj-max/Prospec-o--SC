@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prospecção SC</title>
+<meta name="description" content="Encontre empresas de Santa Catarina no Google Maps e organize seus contatos.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-192.png">
+<meta name="theme-color" content="#0b2a63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Cores da marca: troque aqui se precisar ajustar ao manual da Ademicon ===== */
+  :root {
+    --marca: #0b2a63;        /* azul-marinho principal */
+    --marca-2: #16418f;      /* azul secundário (degradê) */
+    --destaque: #ff6b1a;     /* laranja de destaque (botões principais) */
+    --destaque-escuro: #e65a0c;
+
+    --bg: #f3f5f9; --painel: #ffffff; --borda: #e3e7ef; --texto: #14213d; --suave: #64708a;
+    --campo: #f6f8fb; --sombra: 0 6px 24px rgba(11, 42, 99, .08);
+    --azul-claro: #e8eefb; --ok: #12805c; --ok-bg: #e3f5ee; --amarelo: #a86400; --amarelo-bg: #fff1dc;
+    --roxo: #6d3fd1; --roxo-bg: #efe8fd; --cinza-bg: #eef1f5; --erro: #c0352b;
+    --raio: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1222; --painel: #131c31; --borda: #24304a; --texto: #e7ecf6; --suave: #98a3bb;
+      --campo: #0f1728; --sombra: 0 6px 24px rgba(0, 0, 0, .35);
+      --azul-claro: #1a2a4d; --ok: #43c592; --ok-bg: #11322a; --amarelo: #f0b35b; --amarelo-bg: #3a2a12;
+      --roxo: #b79bff; --roxo-bg: #2a2147; --cinza-bg: #1c2539; --erro: #ff8379;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--texto); }
+  h1, h2, h3, .titulo { font-family: Montserrat, Inter, system-ui, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  svg.i { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ===== topo ===== */
+  .topo { background: linear-gradient(135deg, var(--marca) 0%, var(--marca-2) 100%); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 0 64px; }
+  .topo-in { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .marca { display: flex; align-items: center; gap: 12px; }
+  .logo { height: 36px; min-width: 36px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,.14); border: 1px dashed rgba(255,255,255,.45); font: 700 10px Montserrat, sans-serif; letter-spacing: .06em; padding: 0 8px; }
+  .logo img { height: 36px; display: block; }
+  .marca .nome { font: 700 17px Montserrat, sans-serif; line-height: 1.1; }
+  .marca .nome small { display: block; font: 500 12px Inter, sans-serif; opacity: .75; }
+  .nav-topo { margin-left: auto; display: flex; gap: 4px; }
+  .nav-topo button { background: none; border: 0; color: rgba(255,255,255,.75); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+  .nav-topo button.ativa { background: rgba(255,255,255,.16); color: #fff; }
+  .saudacao { margin: 26px 0 0; }
+  .saudacao h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+  .saudacao p { margin: 4px 0 0; opacity: .8; }
+  .bolha { background: var(--destaque); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 7px; }
+
+  main { max-width: 1120px; margin: -44px auto 0; padding: 0 20px calc(110px + env(safe-area-inset-bottom)); }
+  .cartao { background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); }
+
+  /* ===== busca ===== */
+  .busca { padding: 20px; }
+  .campos { display: grid; grid-template-columns: 1.6fr 1.2fr auto; gap: 12px; }
+  .campo { position: relative; }
+  .campo svg.i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--suave); }
+  .campo input { width: 100%; height: 52px; border: 1.5px solid var(--borda); background: var(--campo); border-radius: 12px; padding: 0 14px 0 44px; font-size: 16px; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .campo input:focus { border-color: var(--marca-2); box-shadow: 0 0 0 4px rgba(22, 65, 143, .12); background: var(--painel); }
+  .btn-principal { height: 52px; border: 0; border-radius: 12px; padding: 0 26px; background: var(--destaque); color: #fff; font: 700 15px Montserrat, sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(255, 107, 26, .3); transition: background .15s, transform .1s; }
+  .btn-principal:hover { background: var(--destaque-escuro); }
+  .btn-principal:active { transform: scale(.98); }
+  .btn-principal:disabled { opacity: .6; cursor: default; }
+  .atalhos { margin-top: 14px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .atalhos::-webkit-scrollbar { display: none; }
+  .atalhos .rot { font-size: 12px; color: var(--suave); font-weight: 600; align-self: center; white-space: nowrap; margin-right: 2px; }
+  .chip { flex: none; border: 1px solid var(--borda); background: var(--painel); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .chip:hover { border-color: var(--marca-2); color: var(--marca-2); }
+  .chip.on { background: var(--marca); border-color: var(--marca); color: #fff; }
+  .modos { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .segmento { display: inline-flex; background: var(--cinza-bg); border-radius: 12px; padding: 4px; }
+  .segmento button { border: 0; background: none; padding: 8px 14px; border-radius: 9px; font-weight: 600; font-size: 13px; color: var(--suave); cursor: pointer; }
+  .segmento button.on { background: var(--painel); color: var(--marca); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  @media (prefers-color-scheme: dark) { .segmento button.on { color: #fff; } }
+  .dica { font-size: 13px; color: var(--suave); flex: 1; min-width: 200px; }
+  .progresso { height: 4px; border-radius: 99px; background: var(--cinza-bg); overflow: hidden; margin-top: 16px; display: none; }
+  .progresso div { height: 100%; width: 0; background: linear-gradient(90deg, var(--destaque), #ffa25f); transition: width .3s; }
+
+  /* ===== resultados ===== */
+  .barra-res { display: flex; align-items: center; gap: 12px; margin: 26px 0 12px; flex-wrap: wrap; }
+  .barra-res h2 { margin: 0; font-size: 18px; }
+  .barra-res h2 span { color: var(--suave); font: 500 14px Inter, sans-serif; }
+  .barra-res .acoes { margin-left: auto; display: flex; gap: 8px; }
+  .btn { border: 1px solid var(--borda); background: var(--painel); border-radius: 10px; padding: 8px 14px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--texto); }
+  .btn:hover { border-color: var(--marca-2); }
+  .btn svg.i { width: 18px; height: 18px; }
+  .filtros { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 16px; }
+  .filtros::-webkit-scrollbar { display: none; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .emp { padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+  .emp-topo { display: flex; gap: 12px; align-items: flex-start; }
+  .avatar { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font: 700 16px Montserrat, sans-serif; color: #fff; flex: none; }
+  .emp h3 { margin: 0; font-size: 15.5px; font-weight: 700; line-height: 1.3; padding-right: 36px; }
+  .emp .cat { font-size: 13px; color: var(--suave); }
+  .salvar { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--borda); background: var(--painel); display: grid; place-items: center; cursor: pointer; color: var(--suave); }
+  .salvar.on { background: var(--destaque); border-color: var(--destaque); color: #fff; }
+  .salvar.on svg.i { fill: currentColor; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; }
+  .meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .meta svg.i { width: 16px; height: 16px; color: var(--suave); }
+  .estrela { color: #f5a524 !important; fill: #f5a524 !important; }
+  .end { font-size: 13px; color: var(--suave); line-height: 1.4; }
+  .contatos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 2px; }
+  .contatos a, .contatos span { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 4px; border-radius: 10px; background: var(--cinza-bg); font-size: 12px; font-weight: 600; text-decoration: none; color: var(--texto); }
+  .contatos a:hover { background: var(--azul-claro); }
+  .contatos span { opacity: .35; }
+  .contatos .zap { background: #e5f7ec; color: #137a3e; }
+  @media (prefers-color-scheme: dark) { .contatos .zap { background: #12321f; color: #5ad68c; } }
+  .vazio { text-align: center; padding: 56px 20px; color: var(--suave); }
+  .vazio svg.i { width: 44px; height: 44px; color: var(--marca-2); opacity: .5; margin-bottom: 8px; }
+  .vazio b { display: block; color: var(--texto); font: 700 17px Montserrat, sans-serif; margin-bottom: 4px; }
+
+  /* ===== leads ===== */
+  .funil { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 14px; }
+  .etapa { border: 0; border-radius: 12px; padding: 12px; text-align: left; cursor: pointer; background: var(--cinza-bg); transition: transform .1s; }
+  .etapa:active { transform: scale(.97); }
+  .etapa b { display: block; font: 800 24px Montserrat, sans-serif; line-height: 1.1; }
+  .etapa small { font-size: 12px; font-weight: 600; }
+  .etapa.on { outline: 2px solid var(--marca-2); outline-offset: 2px; }
+  .s-Novo { background: var(--azul-claro); color: var(--marca-2); }
+  .s-Contatado { background: var(--amarelo-bg); color: var(--amarelo); }
+  .s-Negociando { background: var(--roxo-bg); color: var(--roxo); }
+  .s-Cliente { background: var(--ok-bg); color: var(--ok); }
+  .s-Descartado { background: var(--cinza-bg); color: var(--suave); }
+  @media (prefers-color-scheme: dark) { .s-Novo { color: #8db3ff; } }
+  .pilula { border: 0; border-radius: 999px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; appearance: none; -webkit-appearance: none; }
+  .nota-lead { font-size: 13.5px; background: var(--amarelo-bg); color: var(--texto); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+  .busca-lead { position: relative; flex: 1; min-width: 180px; max-width: 320px; }
+  .busca-lead input { width: 100%; height: 40px; border: 1px solid var(--borda); background: var(--painel); border-radius: 10px; padding: 0 12px 0 38px; font-size: 15px; outline: none; }
+  .busca-lead svg.i { position: absolute; left: 11px; top: 10px; width: 18px; height: 18px; color: var(--suave); }
+
+  /* ===== navegação inferior (celular) ===== */
+  .tabbar { display: none; }
+  /* ===== folhas (modais) ===== */
+  .fundo { position: fixed; inset: 0; background: rgba(8, 18, 40, .5); display: none; align-items: center; justify-content: center; z-index: 30; padding: 16px; backdrop-filter: blur(2px); }
+  .folha { background: var(--painel); border-radius: 20px; padding: 22px; width: 460px; max-width: 100%; max-height: 92vh; overflow: auto; }
+  .folha h3 { margin: 0 0 4px; font-size: 19px; }
+  .folha p { color: var(--suave); font-size: 14px; margin: 0 0 14px; }
+  .folha label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 6px; }
+  .folha input, .folha select, .folha textarea { width: 100%; border: 1.5px solid var(--borda); background: var(--campo); border-radius: 12px; padding: 12px; font-size: 16px; outline: none; }
+  .folha textarea { min-height: 90px; resize: vertical; }
+  .folha .linha { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
+  .folha .btn-principal { height: 44px; padding: 0 20px; }
+  .uso { margin-top: 12px; font-size: 13px; background: var(--cinza-bg); border-radius: 10px; padding: 10px 12px; color: var(--suave); }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: #101a2e; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 40; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+  .toast.erro { background: var(--erro); }
+
+  @media (max-width: 760px) {
+    .topo { padding-bottom: 58px; }
+    .topo-in, main { padding-left: 16px; padding-right: 16px; }
+    .nav-topo { display: none; }
+    .saudacao { margin-top: 18px; }
+    .saudacao h1 { font-size: 22px; }
+    .campos { grid-template-columns: 1fr; }
+    .busca { padding: 16px; }
+    .grade { grid-template-columns: 1fr; }
+    .barra-res .acoes .txt { display: none; }
+    .funil { grid-template-columns: repeat(5, minmax(96px, 1fr)); overflow-x: auto; }
+    .toast { bottom: calc(86px + env(safe-area-inset-bottom)); }
+    .tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--painel); border-top: 1px solid var(--borda); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,.06); }
+    .tabbar button { flex: 1; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11.5px; font-weight: 600; color: var(--suave); padding: 6px 0; cursor: pointer; position: relative; }
+    .tabbar button.ativa { color: var(--marca-2); }
+    @media (prefers-color-scheme: dark) { .tabbar button.ativa { color: #8db3ff; } }
+    .tabbar .bolha { position: absolute; top: 0; left: calc(50% + 6px); }
+    .fundo { align-items: flex-end; padding: 0; }
+    .folha { border-radius: 20px 20px 0 0; width: 100%; padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-ajustes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-fone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 9.5c.3 2.3 2.2 4.4 4.6 5l1.2-1.2 1.9.9-.4 1.6c-3.6.4-7.8-3.4-7.6-7.3l1.6-.4.9 1.9z"/></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-site" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></symbol>
+  <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+  <symbol id="i-baixar" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-lapis" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 8l8 2v11M3 21h18M8 8h.01M8 12h.01M8 16h.01M16 13h.01M16 17h.01"/></symbol>
+</svg>
+
+<header class="topo">
+  <div class="topo-in">
+    <div class="marca">
+      <div class="logo" id="logo" style="display:none"></div>
+      <div class="nome">Prospecção SC<small>Encontre e organize seus clientes</small></div>
+      <nav class="nav-topo">
+        <button class="ativa" data-aba="buscar"><svg class="i"><use href="#i-busca"/></svg>Buscar</button>
+        <button data-aba="leads"><svg class="i"><use href="#i-lista"/></svg>Meus leads <span class="bolha" data-qtd>0</span></button>
+        <button data-acao="config"><svg class="i"><use href="#i-ajustes"/></svg>Ajustes</button>
+      </nav>
+    </div>
+    <div class="saudacao" id="saudacao">
+      <h1 id="saudTitulo">Quem você quer encontrar hoje?</h1>
+      <p id="saudTexto">Busque empresas de qualquer cidade de Santa Catarina.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= BUSCAR ================= -->
+  <section id="aba-buscar">
+    <div class="cartao busca">
+      <div class="campos">
+        <div class="campo"><svg class="i"><use href="#i-predio"/></svg>
+          <input id="termo" placeholder="Tipo de empresa (ex.: academia)" autocomplete="off" enterkeyhint="search"></div>
+        <div class="campo"><svg class="i"><use href="#i-pin"/></svg>
+          <input id="cidade" list="listaCidades" placeholder="Cidade" autocomplete="off" enterkeyhint="search">
+          <datalist id="listaCidades"></datalist></div>
+        <button class="btn-principal" id="btnBuscar"><svg class="i"><use href="#i-busca"/></svg><span>Buscar empresas</span></button>
+      </div>
+      <div class="atalhos" id="atalhosTermo"><span class="rot">Ideias:</span></div>
+      <div class="atalhos" id="atalhosCidade" style="margin-top:8px"><span class="rot">Cidades:</span></div>
+      <div class="modos">
+        <div class="segmento" id="modo">
+          <button data-modo="rapida">Rápida</button>
+          <button data-modo="completa" class="on">Cidade inteira</button>
+          <button data-modo="maxima">Cidade grande</button>
+        </div>
+        <div class="dica" id="dicaModo"></div>
+      </div>
+      <div class="progresso" id="progresso"><div></div></div>
+    </div>
+
+    <div id="areaResultados" style="display:none">
+      <div class="barra-res">
+        <h2 id="tituloRes"></h2>
+        <div class="acoes">
+          <button class="btn" id="btnSalvarTodos"><svg class="i"><use href="#i-mais"/></svg><span class="txt">Salvar todos</span></button>
+          <button class="btn" id="btnCsvBusca"><svg class="i"><use href="#i-baixar"/></svg><span class="txt">Planilha</span></button>
+        </div>
+      </div>
+      <div class="filtros" id="filtros">
+        <button class="chip on" data-f="tel">Com telefone</button>
+        <button class="chip" data-f="zap">Com WhatsApp</button>
+        <button class="chip" data-f="site">Com site</button>
+        <button class="chip" data-f="semsite">Sem site</button>
+        <button class="chip" data-f="nota4">Nota 4+</button>
+        <button class="chip on" data-f="novos">Ocultar salvos</button>
+      </div>
+      <div class="grade" id="cards"></div>
+    </div>
+
+    <div class="vazio" id="vazioBusca">
+      <svg class="i"><use href="#i-busca"/></svg>
+      <b>Comece sua prospecção</b>
+      Escolha um tipo de empresa e uma cidade.<br>Dica: separe por vírgula para buscar vários tipos de uma vez.
+    </div>
+  </section>
+
+  <!-- ================= LEADS ================= -->
+  <section id="aba-leads" style="display:none">
+    <div class="cartao funil" id="funil"></div>
+    <div class="barra-res">
+      <h2 id="tituloLeads"></h2>
+      <div class="busca-lead"><svg class="i"><use href="#i-busca"/></svg><input id="fBuscaLead" placeholder="Buscar nos leads"></div>
+      <div class="acoes" style="margin-left:0">
+        <button class="btn" id="btnCsvLeads"><svg class="i"><use href="#i-baixar"/></svg><span class="txt">Planilha</span></button>
+        <button class="btn" id="btnBackup"><svg class="i"><use href="#i-sync"/></svg><span class="txt">Backup</span></button>
+      </div>
+    </div>
+    <div class="grade" id="cardsLeads"></div>
+    <div class="vazio" id="vazioLeads">
+      <svg class="i"><use href="#i-marcador"/></svg>
+      <b>Nenhum lead salvo ainda</b>
+      Na busca, toque no marcador das empresas que interessam.
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="ativa" data-aba="buscar"><svg class="i"><use href="#i-busca"/></svg>Buscar</button>
+  <button data-aba="leads"><svg class="i"><use href="#i-lista"/></svg>Meus leads<span class="bolha" data-qtd>0</span></button>
+  <button data-acao="config"><svg class="i"><use href="#i-ajustes"/></svg>Ajustes</button>
+</nav>
+
+<!-- ================= FOLHAS ================= -->
+<div class="fundo" id="fConfig"><div class="folha">
+  <h3>Ajustes</h3>
+  <p>A chave da API do Google é necessária para buscar. Ela fica salva só neste aparelho.</p>
+  <label for="chave">Chave da API do Google</label>
+  <input type="password" id="chave" placeholder="Começa com AIza…" autocomplete="off">
+  <label for="nomeUsuario">Seu nome (para a saudação)</label>
+  <input id="nomeUsuario" placeholder="Opcional">
+  <div class="uso" id="uso"></div>
+  <div class="linha"><button class="btn" data-fechar>Cancelar</button><button class="btn-principal" id="btnSalvarChave">Salvar</button></div>
+</div></div>
+
+<div class="fundo" id="fBackup"><div class="folha">
+  <h3>Backup dos leads</h3>
+  <p>Os leads ficam salvos neste aparelho. Para levar do notebook para o celular (ou o contrário), baixe o backup em um e abra no outro. Leads repetidos são juntados, mantendo a versão mais recente.</p>
+  <div class="linha" style="justify-content:flex-start">
+    <button class="btn" id="btnBaixarBackup"><svg class="i"><use href="#i-baixar"/></svg>Baixar backup</button>
+    <label class="btn" style="margin:0;font-size:14px">Abrir backup<input type="file" id="arqBackup" accept=".json,application/json" hidden></label>
+  </div>
+  <div class="linha"><button class="btn" data-fechar>Fechar</button></div>
+</div></div>
+
+<div class="fundo" id="fLead"><div class="folha">
+  <h3 id="mlNome"></h3>
+  <p id="mlInfo"></p>
+  <label for="mlStatus">Etapa</label>
+  <select id="mlStatus"></select>
+  <label for="mlNota">Anotações</label>
+  <textarea id="mlNota" placeholder="Ex.: falei com a Ana, retornar dia 10"></textarea>
+  <div class="linha">
+    <button class="btn" id="mlExcluir" style="margin-right:auto;color:var(--erro)">Excluir</button>
+    <button class="btn" data-fechar>Cancelar</button>
+    <button class="btn-principal" id="mlSalvar">Salvar</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// ============================================================ utilidades
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const ler = (k, padrao) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : padrao; } catch (e) { return padrao; } };
+const icone = (n, cls = "") => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
+const STATUS = ["Novo", "Contatado", "Negociando", "Cliente", "Descartado"];
+const CIDADES = ["Florianópolis","Joinville","Blumenau","São José","Itajaí","Chapecó","Palhoça","Criciúma","Jaraguá do Sul","Lages","Balneário Camboriú","Brusque","Tubarão","São Bento do Sul","Navegantes","Camboriú","Caçador","Concórdia","Rio do Sul","Gaspar","Biguaçu","Indaial","Itapema","Araranguá","Mafra","Canoinhas","Xanxerê","Videira","São Miguel do Oeste","Içara","Tijucas","Pomerode","Porto Belo","Bombinhas","Garopaba","Imbituba","Laguna","Penha","Balneário Piçarras","Guaramirim","Timbó","Fraiburgo","Curitibanos","Joaçaba","São Francisco do Sul","Barra Velha","Orleans","Sombrio","Xaxim","Santo Amaro da Imperatriz"];
+const IDEIAS = ["Clínica médica","Odontologia","Academia","Imobiliária","Construtora","Restaurante","Contabilidade","Advocacia","Oficina mecânica","Transportadora","Salão de beleza","Pet shop","Loja de veículos","Agronegócio"];
+const CORES_AVATAR = ["#0b2a63","#16418f","#ff6b1a","#12805c","#6d3fd1","#c0352b","#0d7d8c","#a86400"];
+$("#listaCidades").innerHTML = CIDADES.map(c => `<option value="${c}">`).join("");
+
+let tToast;
+function toast(msg, erro) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast on" + (erro ? " erro" : "");
+  clearTimeout(tToast); tToast = setTimeout(() => t.className = "toast", erro ? 7000 : 3500);
+}
+function abrir(id) { $(id).style.display = "flex"; }
+$$(".fundo").forEach(m => m.addEventListener("click", e => {
+  if (e.target === m || e.target.hasAttribute("data-fechar")) m.style.display = "none";
+}));
+function zapDe(intl) {
+  const d = String(intl || "").replace(/\D/g, "");
+  return d.startsWith("55") && d.length === 13 && d[4] === "9" ? "https://wa.me/" + d : "";
+}
+function baixar(nome, conteudo, tipo) {
+  const url = URL.createObjectURL(new Blob([conteudo], {type: tipo}));
+  const a = Object.assign(document.createElement("a"), {href: url, download: nome});
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function csv(linhas, colunas) {
+  const cel = v => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  return "﻿" + [colunas.map(c => c[0]).join(";"), ...linhas.map(l => colunas.map(c => cel(c[1](l))).join(";"))].join("\r\n");
+}
+const hoje = () => new Date().toISOString().slice(0, 10);
+const iniciais = n => n.replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(w => w.length > 2 || /^\d/.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase() || n.slice(0, 2).toUpperCase();
+const corDe = s => CORES_AVATAR[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % CORES_AVATAR.length];
+
+// logo opcional: coloque um arquivo logo.png na pasta do app
+(() => { const img = new Image(); img.onload = () => { $("#logo").innerHTML = ""; $("#logo").appendChild(img); $("#logo").style.cssText = "display:grid;background:none;border:0;padding:0"; }; img.src = "logo.png"; img.alt = "Logo"; })();
+
+// ============================================================ ajustes, chave e uso
+let chave = ler("chave", "");
+function saudar() {
+  const nome = ler("nome", ""), h = new Date().getHours();
+  const p = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  $("#saudTitulo").textContent = nome ? `${p}, ${nome}!` : "Quem você quer encontrar hoje?";
+}
+function contarConsulta() {
+  const mes = new Date().toISOString().slice(0, 7);
+  const u = ler("uso", {mes, n: 0}); if (u.mes !== mes) { u.mes = mes; u.n = 0; }
+  u.n++; guardar("uso", u);
+}
+function abrirConfig() {
+  const mes = new Date().toISOString().slice(0, 7), u = ler("uso", {mes, n: 0});
+  $("#chave").value = chave; $("#nomeUsuario").value = ler("nome", "");
+  $("#uso").innerHTML = `Consultas ao Google feitas neste aparelho este mês: <b>${u.mes === mes ? u.n : 0}</b>. O Google dá uma cota mensal gratuita; acompanhe o uso real no painel do Google Cloud.`;
+  abrir("#fConfig");
+}
+$$("[data-acao=config]").forEach(b => b.onclick = abrirConfig);
+$("#btnSalvarChave").onclick = () => {
+  chave = $("#chave").value.trim(); guardar("chave", chave); guardar("nome", $("#nomeUsuario").value.trim());
+  $("#fConfig").style.display = "none"; saudar();
+  toast(chave ? "Ajustes salvos. Pode buscar!" : "Chave removida.");
+};
+
+// ============================================================ Google Places (API nova)
+const CAMPOS = ["id","displayName","primaryTypeDisplayName","formattedAddress","nationalPhoneNumber",
+  "internationalPhoneNumber","websiteUri","rating","userRatingCount","googleMapsUri","businessStatus"];
+
+async function google(corpo, campos) {
+  const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "X-Goog-Api-Key": chave, "X-Goog-FieldMask": campos},
+    body: JSON.stringify(Object.assign({languageCode: "pt-BR", regionCode: "BR"}, corpo)),
+  });
+  contarConsulta();
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const msg = d.error?.message || r.statusText;
+    if (/API key not valid|API_KEY_INVALID/i.test(msg)) throw new Error("A chave da API não é válida. Confira em Ajustes.");
+    if (/referer|referrer/i.test(msg)) throw new Error("A chave não permite este endereço. Adicione o endereço do app nas restrições da chave (veja o guia).");
+    if (/billing/i.test(msg)) throw new Error("O faturamento não está ativo no Google Cloud (veja o guia).");
+    if (/not been used|disabled/i.test(msg)) throw new Error("Ative a “Places API (New)” no Google Cloud (veja o guia).");
+    throw new Error("Erro do Google: " + msg);
+  }
+  return d;
+}
+async function buscarPaginas(textQuery, extra) {
+  let token = null, todos = [];
+  for (let p = 0; p < 3; p++) {
+    const corpo = Object.assign({textQuery, pageSize: 20}, extra, token ? {pageToken: token} : {});
+    const d = await google(corpo, CAMPOS.map(c => "places." + c).join(",") + ",nextPageToken");
+    todos = todos.concat(d.places || []);
+    token = d.nextPageToken;
+    if (!token) break;
+    await new Promise(r => setTimeout(r, 600));
+  }
+  return todos;
+}
+async function areaDaCidade(cidade) {
+  const d = await google({textQuery: `${cidade}, Santa Catarina, Brasil`, pageSize: 1}, "places.viewport,places.formattedAddress");
+  const v = d.places?.[0]?.viewport;
+  if (!v) throw new Error(`Não encontrei a cidade “${cidade}”.`);
+  return v;
+}
+function partes(v, n) {
+  const res = [], dLat = (v.high.latitude - v.low.latitude) / n, dLng = (v.high.longitude - v.low.longitude) / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) res.push({rectangle: {
+    low: {latitude: v.low.latitude + i * dLat, longitude: v.low.longitude + j * dLng},
+    high: {latitude: v.low.latitude + (i + 1) * dLat, longitude: v.low.longitude + (j + 1) * dLng}}});
+  return res;
+}
+function paraEmpresa(p, termo, cidade) {
+  return {
+    id: p.id, nome: p.displayName?.text || "", categoria: p.primaryTypeDisplayName?.text || "",
+    endereco: p.formattedAddress || "", telefone: p.nationalPhoneNumber || "",
+    whatsapp: zapDe(p.internationalPhoneNumber), site: p.websiteUri || "",
+    nota: p.rating || "", avaliacoes: p.userRatingCount || 0, maps: p.googleMapsUri || "", busca: termo, cidade,
+  };
+}
+
+// ============================================================ busca
+const MODOS = {
+  rapida: {n: 0, dica: "Até 60 empresas, as mais relevantes. Usa até 3 consultas."},
+  completa: {n: 3, dica: "Varre a cidade em 9 partes e junta sem repetir. Usa de 10 a 28 consultas."},
+  maxima: {n: 5, dica: "Varre em 25 partes. Para Florianópolis, Joinville, Blumenau e buscas amplas. De 26 a 76 consultas."},
+};
+let modo = "completa";
+$$("#modo button").forEach(b => b.onclick = () => {
+  modo = b.dataset.modo; $$("#modo button").forEach(x => x.classList.toggle("on", x === b)); $("#dicaModo").textContent = MODOS[modo].dica;
+});
+$("#dicaModo").textContent = MODOS[modo].dica;
+
+IDEIAS.forEach(t => $("#atalhosTermo").insertAdjacentHTML("beforeend", `<button class="chip" data-termo="${t}">${t}</button>`));
+CIDADES.slice(0, 12).forEach(c => $("#atalhosCidade").insertAdjacentHTML("beforeend", `<button class="chip" data-cidade="${c}">${icone("pin")}${c}</button>`));
+$("#atalhosTermo").onclick = e => { const t = e.target.closest("[data-termo]")?.dataset.termo; if (t) { $("#termo").value = t; marcarAtalhos(); } };
+$("#atalhosCidade").onclick = e => { const c = e.target.closest("[data-cidade]")?.dataset.cidade; if (c) { $("#cidade").value = c; marcarAtalhos(); } };
+function marcarAtalhos() {
+  $$("[data-termo]").forEach(b => b.classList.toggle("on", b.dataset.termo === $("#termo").value));
+  $$("[data-cidade]").forEach(b => b.classList.toggle("on", b.dataset.cidade === $("#cidade").value));
+}
+$("#termo").oninput = marcarAtalhos; $("#cidade").oninput = marcarAtalhos;
+
+let resultados = [];
+function progresso(pct) { const p = $("#progresso"); p.style.display = pct == null ? "none" : "block"; p.firstElementChild.style.width = (pct || 0) + "%"; }
+
+$("#btnBuscar").onclick = async () => {
+  const termos = $("#termo").value.split(",").map(t => t.trim()).filter(Boolean);
+  const cidade = $("#cidade").value.trim();
+  if (!chave) { abrirConfig(); toast("Cole sua chave da API do Google para começar."); return; }
+  if (!termos.length || !cidade) { toast("Escolha o tipo de empresa e a cidade."); return; }
+  const b = $("#btnBuscar"), rot = b.querySelector("span"); b.disabled = true; rot.textContent = "Buscando…";
+  $$("input").forEach(i => i.blur());
+  const vistos = new Map();
+  try {
+    progresso(3);
+    const areas = MODOS[modo].n ? partes(await areaDaCidade(cidade), MODOS[modo].n) : [null];
+    const total = termos.length * areas.length; let feitos = 0;
+    for (const termo of termos) for (const area of areas) {
+      for (const p of await buscarPaginas(`${termo} em ${cidade}, SC`, area ? {locationRestriction: area} : {})) {
+        if (p.businessStatus === "CLOSED_PERMANENTLY" || !/\bSC\b|Santa Catarina/.test(p.formattedAddress || "")) continue;
+        if (!vistos.has(p.id)) vistos.set(p.id, paraEmpresa(p, termo, cidade));
+      }
+      progresso(100 * ++feitos / total); rot.textContent = `${vistos.size} encontradas…`;
+    }
+    resultados = [...vistos.values()].sort((a, b) => (b.avaliacoes || 0) - (a.avaliacoes || 0));
+    guardar("ultimaBusca", {termo: $("#termo").value, cidade, resultados});
+    desenharResultados();
+    $("#areaResultados").scrollIntoView({behavior: "smooth", block: "start"});
+  } catch (e) {
+    toast(/Failed to fetch|NetworkError/.test(e.message) ? "Sem conexão com o Google. Verifique a internet." : e.message, true);
+    if (vistos.size) { resultados = [...vistos.values()]; desenharResultados(); }
+  }
+  progresso(null); b.disabled = false; rot.textContent = "Buscar empresas";
+};
+["#termo", "#cidade"].forEach(s => $(s).addEventListener("keydown", e => { if (e.key === "Enter") $("#btnBuscar").click(); }));
+
+const filtroOn = f => $(`[data-f=${f}]`).classList.contains("on");
+$("#filtros").onclick = e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  b.classList.toggle("on");
+  if (b.dataset.f === "site" && b.classList.contains("on")) $("[data-f=semsite]").classList.remove("on");
+  if (b.dataset.f === "semsite" && b.classList.contains("on")) $("[data-f=site]").classList.remove("on");
+  desenharResultados();
+};
+function filtrados() {
+  return resultados.filter(r => (!filtroOn("tel") || r.telefone) && (!filtroOn("zap") || r.whatsapp) &&
+    (!filtroOn("site") || r.site) && (!filtroOn("semsite") || !r.site) &&
+    (!filtroOn("nota4") || (r.nota || 0) >= 4) && (!filtroOn("novos") || !leads[r.id]));
+}
+
+function contatos(r) {
+  const a = (url, ic, txt, cls = "", alvo = true) => url
+    ? `<a class="${cls}" href="${esc(url)}" ${alvo ? 'target="_blank" rel="noopener"' : ""}>${icone(ic)}${txt}</a>`
+    : `<span>${icone(ic)}${txt}</span>`;
+  return `<div class="contatos">
+    ${a(r.whatsapp, "zap", "WhatsApp", "zap")}
+    ${a(r.telefone && "tel:" + r.telefone.replace(/[^\d+]/g, ""), "fone", "Ligar", "", false)}
+    ${a(r.maps, "mapa", "Maps")}
+    ${a(r.site, "site", "Site")}
+  </div>`;
+}
+function cabecalho(r, extraDireita) {
+  return `<div class="emp-topo">
+      <div class="avatar" style="background:${corDe(r.nome)}">${esc(iniciais(r.nome))}</div>
+      <div style="min-width:0"><h3>${esc(r.nome)}</h3><div class="cat">${esc(r.categoria || r.busca)}</div></div>
+    </div>${extraDireita || ""}
+    <div class="meta">
+      ${r.nota ? `<span>${icone("estrela", "estrela")}<b>${String(r.nota).replace(".", ",")}</b>&nbsp;<span style="color:var(--suave)">(${r.avaliacoes})</span></span>` : `<span style="color:var(--suave)">Sem avaliações</span>`}
+      ${r.telefone ? `<span>${icone("fone")}${esc(r.telefone)}</span>` : ""}
+    </div>
+    <div class="end">${esc(r.endereco)}</div>`;
+}
+
+function desenharResultados() {
+  $("#vazioBusca").style.display = "none"; $("#areaResultados").style.display = "";
+  const lista = filtrados();
+  $("#tituloRes").innerHTML = `${lista.length} empresas <span>de ${resultados.length} encontradas</span>`;
+  $("#cards").innerHTML = lista.map(r => `
+    <article class="cartao emp">
+      ${cabecalho(r, `<button class="salvar ${leads[r.id] ? "on" : ""}" data-salvar="${esc(r.id)}" title="${leads[r.id] ? "Salvo" : "Salvar lead"}">${icone("marcador")}</button>`)}
+      ${contatos(r)}
+    </article>`).join("") || `<div class="vazio" style="grid-column:1/-1"><b>Nenhuma empresa com esses filtros</b>Tente desligar algum filtro acima.</div>`;
+}
+$("#cards").onclick = e => {
+  const id = e.target.closest("[data-salvar]")?.dataset.salvar; if (!id) return;
+  if (leads[id]) return abrirLead(id);
+  salvarLeads([resultados.find(x => x.id === id)]); desenharResultados(); toast("Salvo em Meus leads.");
+};
+$("#btnSalvarTodos").onclick = () => {
+  const novos = filtrados().filter(r => !leads[r.id]);
+  if (!novos.length) return toast("Todas as empresas da lista já estão salvas.");
+  salvarLeads(novos); desenharResultados(); toast(`${novos.length} empresas salvas em Meus leads.`);
+};
+const COLS = [["nome", r => r.nome], ["categoria", r => r.categoria], ["telefone", r => r.telefone],
+  ["whatsapp", r => r.whatsapp], ["site", r => r.site], ["nota", r => String(r.nota || "").replace(".", ",")],
+  ["avaliacoes", r => r.avaliacoes], ["endereco", r => r.endereco], ["cidade", r => r.cidade],
+  ["busca", r => r.busca], ["link_maps", r => r.maps]];
+$("#btnCsvBusca").onclick = () => baixar(`empresas_${hoje()}.csv`, csv(filtrados(), COLS), "text/csv");
+
+// ============================================================ meus leads
+let leads = ler("leads", {}), filtroEtapa = "";
+STATUS.forEach(s => $("#mlStatus").add(new Option(s, s)));
+function persistir() {
+  if (!guardar("leads", leads)) toast("Não consegui salvar neste navegador (modo anônimo?). Baixe um backup.", true);
+  $$("[data-qtd]").forEach(b => { const n = Object.keys(leads).length; b.textContent = n; b.style.display = n ? "" : "none"; });
+}
+function salvarLeads(lista) {
+  const agora = new Date().toISOString();
+  for (const r of lista) leads[r.id] = Object.assign({}, r, {status: "Novo", anotacao: "", salvoEm: agora, atualizado: agora});
+  persistir();
+}
+function desenharLeads() {
+  const todos = Object.values(leads).sort((a, b) => b.atualizado.localeCompare(a.atualizado));
+  $("#funil").innerHTML = STATUS.map(s => `<button class="etapa s-${s} ${filtroEtapa === s ? "on" : ""}" data-etapa="${s}"><b>${todos.filter(l => l.status === s).length}</b><small>${s}</small></button>`).join("");
+  const q = $("#fBuscaLead").value.toLowerCase();
+  const lista = todos.filter(l => (!filtroEtapa || l.status === filtroEtapa) && (!q || (l.nome + " " + l.cidade + " " + l.endereco + " " + (l.anotacao || "")).toLowerCase().includes(q)));
+  $("#tituloLeads").innerHTML = filtroEtapa ? `${lista.length} em ${filtroEtapa} <span>· <a href="#" id="verTodos">ver todos</a></span>` : `${todos.length} leads`;
+  $("#funil").style.display = $("#vazioLeads").style.display = "";
+  $("#funil").style.display = todos.length ? "" : "none";
+  $("#vazioLeads").style.display = todos.length ? "none" : "block";
+  $("#cardsLeads").innerHTML = lista.map(l => `
+    <article class="cartao emp">
+      ${cabecalho(l, `<select class="pilula s-${l.status}" data-status="${esc(l.id)}" style="position:absolute;top:14px;right:14px">${STATUS.map(s => `<option ${s === l.status ? "selected" : ""}>${s}</option>`).join("")}</select>`)}
+      ${l.anotacao ? `<div class="nota-lead">${esc(l.anotacao)}</div>` : ""}
+      ${contatos(l)}
+      <button class="btn" data-editar="${esc(l.id)}" style="justify-content:center">${icone("lapis")}${l.anotacao ? "Editar anotação" : "Anotar"}</button>
+    </article>`).join("");
+  $$("#cardsLeads .emp h3").forEach(h => h.style.paddingRight = "110px");
+  const vt = $("#verTodos"); if (vt) vt.onclick = e => { e.preventDefault(); filtroEtapa = ""; desenharLeads(); };
+}
+$("#funil").onclick = e => { const s = e.target.closest("[data-etapa]")?.dataset.etapa; if (!s) return; filtroEtapa = filtroEtapa === s ? "" : s; desenharLeads(); };
+$("#fBuscaLead").oninput = desenharLeads;
+$("#cardsLeads").addEventListener("change", e => {
+  const id = e.target.dataset.status; if (!id) return;
+  leads[id].status = e.target.value; leads[id].atualizado = new Date().toISOString(); persistir(); desenharLeads();
+  toast(`Movido para ${e.target.value}.`);
+});
+$("#cardsLeads").addEventListener("click", e => { const id = e.target.closest("[data-editar]")?.dataset.editar; if (id) abrirLead(id); });
+
+let leadAberto = null;
+function abrirLead(id) {
+  const l = leads[id]; leadAberto = id;
+  $("#mlNome").textContent = l.nome;
+  $("#mlInfo").textContent = [l.telefone, l.cidade, "salvo em " + new Date(l.salvoEm).toLocaleDateString("pt-BR")].filter(Boolean).join(" · ");
+  $("#mlStatus").value = l.status; $("#mlNota").value = l.anotacao || "";
+  abrir("#fLead");
+}
+$("#mlSalvar").onclick = () => {
+  Object.assign(leads[leadAberto], {status: $("#mlStatus").value, anotacao: $("#mlNota").value, atualizado: new Date().toISOString()});
+  persistir(); $("#fLead").style.display = "none"; desenharLeads(); if (resultados.length) desenharResultados(); toast("Lead atualizado.");
+};
+$("#mlExcluir").onclick = () => {
+  if (!confirm("Excluir este lead?")) return;
+  delete leads[leadAberto]; persistir(); $("#fLead").style.display = "none"; desenharLeads(); if (resultados.length) desenharResultados();
+};
+$("#btnCsvLeads").onclick = () => baixar(`meus_leads_${hoje()}.csv`, csv(Object.values(leads),
+  [["etapa", l => l.status], ["anotacao", l => l.anotacao], ...COLS, ["salvo_em", l => l.salvoEm.slice(0, 10)]]), "text/csv");
+$("#btnBackup").onclick = () => abrir("#fBackup");
+$("#btnBaixarBackup").onclick = () => baixar(`backup_leads_${hoje()}.json`, JSON.stringify({versao: 1, leads}, null, 1), "application/json");
+$("#arqBackup").onchange = async e => {
+  try {
+    const dados = JSON.parse(await e.target.files[0].text()); let n = 0;
+    for (const [id, l] of Object.entries(dados.leads || {})) if (!leads[id] || (l.atualizado || "") > (leads[id].atualizado || "")) { leads[id] = l; n++; }
+    persistir(); desenharLeads(); $("#fBackup").style.display = "none"; toast(`Backup aberto: ${n} leads novos ou atualizados.`);
+  } catch (err) { toast("Arquivo de backup inválido.", true); }
+  e.target.value = "";
+};
+
+// ============================================================ navegação
+function irPara(aba) {
+  $$("[data-aba]").forEach(x => x.classList.toggle("ativa", x.dataset.aba === aba));
+  $("#aba-buscar").style.display = aba === "buscar" ? "" : "none";
+  $("#aba-leads").style.display = aba === "leads" ? "" : "none";
+  $("#saudTexto").textContent = aba === "leads" ? "Acompanhe cada contato até virar cliente." : "Busque empresas de qualquer cidade de Santa Catarina.";
+  if (aba === "leads") { $("#saudTitulo").textContent = "Seu funil de vendas"; desenharLeads(); } else saudar();
+  scrollTo({top: 0});
+}
+$$("[data-aba]").forEach(b => b.onclick = () => irPara(b.dataset.aba));
+
+saudar(); persistir();
+const ultima = ler("ultimaBusca", null);
+if (ultima) { $("#termo").value = ultima.termo; $("#cidade").value = ultima.cidade; resultados = ultima.resultados || []; if (resultados.length) desenharResultados(); marcarAtalhos(); }
+if (!chave) setTimeout(() => toast("Para começar, abra Ajustes e cole sua chave da API do Google."), 600);
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
